@@ -13,8 +13,8 @@ public class JwtTokenProvider {
     @Value("${security.jwt.token.expire-length}")
     private long validityInMilliseconds;
 
-    public String createToken(String principal) {
-        Claims claims = Jwts.claims().setSubject(principal);
+    public String createToken(String principal) { // principal: 사용자 이메일
+        Claims claims = Jwts.claims().setSubject(principal); // subject 클레임에 사용자 이메일을 설정한다.
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 

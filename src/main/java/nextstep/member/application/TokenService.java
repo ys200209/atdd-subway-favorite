@@ -21,7 +21,7 @@ public class TokenService {
             throw new AuthenticationException();
         }
 
-        String token = jwtTokenProvider.createToken(member.getEmail());
+        String token = jwtTokenProvider.createToken(member.getEmail()); // 이메일 값을 이용하여 토큰을 생성한다.
 
         return new TokenResponse(token);
     }
