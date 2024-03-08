@@ -108,6 +108,32 @@ public class FavoriteAcceptanceTest extends AcceptanceTest {
         assertThat(targetId).isEqualTo(3L);
     }
 
+    /**
+     * Given 교대역 - 양재역 즐겨찾기가 등록하고
+     * When 즐겨찾기를 삭제하면
+     * Then 즐겨찾기가 삭제된다.
+     */
+    @DisplayName("즐겨찾기를 삭제한다.")
+    @Test
+    void deleteFavorites() {
+        // given
+        Map<String, String> params = new HashMap<>();
+        params.put("source", 교대역 + "");
+        params.put("target", 양재역 + "");
+        String accessToken = getAccessToken();
+        FavoriteSteps.즐겨찾기_생성_요청(params, accessToken);
+
+        // when
+        ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_삭제_요청(accessToken, 1);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT.value()); // NO CONTENT 상태코드 검증
+
+        ExtractableResponse<Response> findAllResponse = FavoriteSteps.즐겨찾기_목록_조회_요청(accessToken); // 빈 즐겨찾기 목록 검증
+        List<Long> ids = findAllResponse.jsonPath().getList("id", Long.class);
+        Assertions.assertThat(ids).isEmpty();
+    }
+
     public String getAccessToken() {
         memberRepository.save(new Member(EMAIL, PASSWORD, AGE)); // 회원가입
 
