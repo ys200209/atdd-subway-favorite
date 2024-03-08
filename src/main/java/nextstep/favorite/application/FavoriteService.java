@@ -1,5 +1,7 @@
 package nextstep.favorite.application;
 
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 import nextstep.favorite.application.dto.FavoriteRequest;
 import nextstep.favorite.application.dto.FavoriteResponse;
 import nextstep.favorite.domain.Favorite;
@@ -7,6 +9,9 @@ import nextstep.favorite.domain.FavoriteRepository;
 import nextstep.member.domain.LoginMember;
 import nextstep.member.domain.Member;
 import nextstep.member.domain.MemberRepository;
+import nextstep.subway.applicaion.dto.StationResponse;
+import nextstep.subway.domain.Station;
+import nextstep.subway.domain.StationRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,12 +24,13 @@ public class FavoriteService {
     // 조금이라도 덜 의존적이기 위해서는 Repository 계층을 직접적으로 의존하는 것이 좋다고 생각이 드는데,
     // 그렇게 되면 만약 존재하지 않는 사용자에 대한 조회를 시도할 때에 대한 예외 처리 코드를 한번 더 작성해주어야 할 것 같아요.
     // 그럼 중복 코드가 발생할텐데, 이 관점에서는 차라리 미리 예외 처리까지 되어있는 해당 도메인의 Service 계층을 의존하는 것이 더 좋을 것 같은데.. 어떻게 생각하시나요?
-
     private FavoriteRepository favoriteRepository;
+    private StationRepository stationRepository;
 
-    public FavoriteService(MemberRepository memberRepository, FavoriteRepository favoriteRepository) {
+    public FavoriteService(MemberRepository memberRepository, FavoriteRepository favoriteRepository, StationRepository stationRepository) {
         this.memberRepository = memberRepository;
         this.favoriteRepository = favoriteRepository;
+        this.stationRepository = stationRepository;
     }
 
     /**
@@ -48,7 +54,14 @@ public class FavoriteService {
      */
     public List<FavoriteResponse> findFavorites() {
         List<Favorite> favorites = favoriteRepository.findAll();
-        return null;
+
+        return favorites.stream()
+                .map(favorite -> {
+                    Station sourceStation = stationRepository.findById(favorite.getSource()).orElseThrow();
+                    Station targetStation = stationRepository.findById(favorite.getTarget()).orElseThrow();
+                    return new FavoriteResponse(favorite.getId(), StationResponse.of(sourceStation), StationResponse.of(targetStation));
+                })
+                .collect(Collectors.toList());
     }
 
     /**

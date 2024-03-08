@@ -29,6 +29,22 @@ public class Favorite {
         this.target = target;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public Member getMember() {
+        return member;
+    }
+
+    public Long getSource() {
+        return source;
+    }
+
+    public Long getTarget() {
+        return target;
+    }
+
     @Override
     public String toString() {
         return "Favorite{" +

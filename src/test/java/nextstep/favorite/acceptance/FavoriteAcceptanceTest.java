@@ -9,10 +9,12 @@ import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import nextstep.member.domain.Member;
 import nextstep.member.domain.MemberRepository;
 import nextstep.utils.AcceptanceTest;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +43,7 @@ public class FavoriteAcceptanceTest extends AcceptanceTest {
     public void setUp() {
         super.setUp();
 
-        교대역 = 지하철역_생성_요청("강남역").jsonPath().getLong("id");
+        교대역 = 지하철역_생성_요청("교대역").jsonPath().getLong("id");
         신논현역 = 지하철역_생성_요청("신논현역").jsonPath().getLong("id");
         양재역 = 지하철역_생성_요청("양재역").jsonPath().getLong("id");
 
@@ -70,14 +72,40 @@ public class FavoriteAcceptanceTest extends AcceptanceTest {
     void createFavorites() {
         // given
         Map<String, String> params = new HashMap<>();
-        params.put("target", 양재역 + "");
         params.put("source", 교대역 + "");
+        params.put("target", 양재역 + "");
 
         // when
         ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_생성_요청(params, getAccessToken());
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+    }
+
+    /**
+     * Given 교대역 - 양재역 즐겨찾기가 등록하고
+     * When 즐겨찾기 목록을 조회하면
+     * Then 즐겨찾기 목록이 조회된다.
+     */
+    @DisplayName("즐겨찾기 목록을 조회한다.")
+    @Test
+    void getFavorites() {
+        // given
+        Map<String, String> params = new HashMap<>();
+        params.put("source", 교대역 + "");
+        params.put("target", 양재역 + "");
+        String accessToken = getAccessToken();
+        FavoriteSteps.즐겨찾기_생성_요청(params, accessToken);
+
+        // when
+        ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_목록_조회_요청(accessToken);
+        Long sourceId = response.jsonPath().getLong("[0].source.id");
+        Long targetId = response.jsonPath().getLong("[0].target.id");
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(sourceId).isEqualTo(1L);
+        assertThat(targetId).isEqualTo(3L);
     }
 
     public String getAccessToken() {
