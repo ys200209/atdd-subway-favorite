@@ -52,8 +52,9 @@ public class FavoriteService {
      *
      * @return
      */
-    public List<FavoriteResponse> findFavorites() {
-        List<Favorite> favorites = favoriteRepository.findAll();
+    public List<FavoriteResponse> findFavorites(String email) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(RuntimeException::new);
+        List<Favorite> favorites = favoriteRepository.findAllById(List.of(member.getId()));
 
         return favorites.stream()
                 .map(favorite -> {

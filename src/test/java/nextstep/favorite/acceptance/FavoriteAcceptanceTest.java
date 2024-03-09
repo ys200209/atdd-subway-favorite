@@ -76,7 +76,8 @@ public class FavoriteAcceptanceTest extends AcceptanceTest {
         params.put("target", 양재역 + "");
 
         // when
-        ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_생성_요청(params, getAccessToken());
+        saveMember(EMAIL);
+        ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_생성_요청(params, getAccessToken(EMAIL));
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
@@ -91,14 +92,14 @@ public class FavoriteAcceptanceTest extends AcceptanceTest {
     @Test
     void getFavorites() {
         // given
-        Map<String, String> params = new HashMap<>();
-        params.put("source", 교대역 + "");
-        params.put("target", 양재역 + "");
-        String accessToken = getAccessToken();
-        FavoriteSteps.즐겨찾기_생성_요청(params, accessToken);
+        saveMember(EMAIL);
+        createFavorite(EMAIL, 교대역, 양재역);
+        String accessToken = getAccessToken(EMAIL);
 
         // when
-        ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_목록_조회_요청(accessToken);
+        Map<String, String> params = new HashMap<>();
+        params.put("email", EMAIL);
+        ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_목록_조회_요청(EMAIL, accessToken);
         Long sourceId = response.jsonPath().getLong("[0].source.id");
         Long targetId = response.jsonPath().getLong("[0].target.id");
 
@@ -117,11 +118,9 @@ public class FavoriteAcceptanceTest extends AcceptanceTest {
     @Test
     void deleteFavorites() {
         // given
-        Map<String, String> params = new HashMap<>();
-        params.put("source", 교대역 + "");
-        params.put("target", 양재역 + "");
-        String accessToken = getAccessToken();
-        FavoriteSteps.즐겨찾기_생성_요청(params, accessToken);
+        saveMember(EMAIL);
+        createFavorite(EMAIL, 교대역, 양재역);
+        String accessToken = getAccessToken(EMAIL);
 
         // when
         ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_삭제_요청(accessToken, 1);
@@ -129,16 +128,58 @@ public class FavoriteAcceptanceTest extends AcceptanceTest {
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT.value()); // NO CONTENT 상태코드 검증
 
-        ExtractableResponse<Response> findAllResponse = FavoriteSteps.즐겨찾기_목록_조회_요청(accessToken); // 빈 즐겨찾기 목록 검증
+        Map<String, String> params = new HashMap<>();
+        params.put("email", EMAIL);
+        ExtractableResponse<Response> findAllResponse = FavoriteSteps.즐겨찾기_목록_조회_요청(EMAIL, accessToken); // 빈 즐겨찾기 목록 검증
         List<Long> ids = findAllResponse.jsonPath().getList("id", Long.class);
         Assertions.assertThat(ids).isEmpty();
     }
 
-    public String getAccessToken() {
-        memberRepository.save(new Member(EMAIL, PASSWORD, AGE)); // 회원가입
+    /**
+     * Given A는 교대역 - 신논현역을, B는 신논현역 - 양재역을 즐겨찾기로 등록
+     * When B의 즐겨찾기를 조회하면
+     * Then 신논현역 - 양재역 즐겨찾기가 조회된다.
+     */
+    @DisplayName("사람들끼리 즐겨찾기를 공유하지 않는다.")
+    @Test
+    void testNotShareFavorites() {
+        // given
+        saveMember("A");
+        createFavorite("A", 교대역, 신논현역);
+
+        saveMember("B");
+        createFavorite("B", 신논현역, 양재역);
+
+        // when
+        String accessToken = getAccessToken("B");
+        ExtractableResponse<Response> response = FavoriteSteps.즐겨찾기_목록_조회_요청("B", accessToken);
+
+        // then
+        String sourceName = response.jsonPath().getString("[0].source.name");
+        String targetName = response.jsonPath().getString("[0].target.name");
+        assertThat(sourceName).isEqualTo("신논현역");
+        assertThat(targetName).isEqualTo("양재역");
+    }
+
+    private void createFavorite(String email, Long source, Long target) {
+        Map<String, String> params = new HashMap<>();
+        params.put("source", source + "");
+        params.put("target", target + "");
+        String accessToken = getAccessToken(email);
+
+        FavoriteSteps.즐겨찾기_생성_요청(params, accessToken);
+    }
+
+    public void saveMember(String email) {
+        Member saveMember = memberRepository.save(new Member(email, PASSWORD, AGE));
+        System.out.println("(print) saveMember = " + saveMember);
+    }
+
+    public String getAccessToken(String email) {
+//        memberRepository.save(new Member(email, PASSWORD, AGE)); // 회원가입
 
         Map<String, String> params = new HashMap<>();
-        params.put("email", EMAIL);
+        params.put("email", email);
         params.put("password", PASSWORD);
 
         ExtractableResponse<Response> response = RestAssured.given().log().all() // 로그인 (post)

@@ -17,9 +17,10 @@ public class FavoriteSteps {
                 .then().log().all().extract();
     }
 
-    public static ExtractableResponse<Response> 즐겨찾기_목록_조회_요청(String accessToken) {
+    public static ExtractableResponse<Response> 즐겨찾기_목록_조회_요청(String email, String accessToken) {
         return RestAssured.given().log().all()
                 .auth().oauth2(accessToken)
+                .body(email)
                 .when().get("/favorites")
                 .then().log().all().extract();
     }
